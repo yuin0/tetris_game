@@ -1,13 +1,14 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-from datetime import datetime
-import pprint
-import copy
+from datetime import datetime # To pick up date
+import pprint # To customize output
+import copy # To copy objects: "copy" does not copy object's contents: the copy has contents referencing to the same of copied one.
+            # "deepCopy" copies object's contents too: the copy has contents that does not reference to the copied one.
 
-class Block_Controller(object):
+class Block_Controller(object): # object is not necessary (to use python2): Block_controller() is also OK
 
-    # init parameter
+    # init parameter <- How to use?
     board_backboard = 0
     board_data_width = 0
     board_data_height = 0
@@ -19,7 +20,7 @@ class Block_Controller(object):
     # input
     #    nextMove : nextMove structure which is empty.
     #    GameStatus : block/field/judge/debug information. 
-    #                 in detail see the internal GameStatus data.
+    #                 in detail see the internal GameStatus data. @game_manager
     # output
     #    nextMove : nextMove structure which includes next shape position and the other.
     def GetNextMove(self, nextMove, GameStatus):
@@ -32,10 +33,10 @@ class Block_Controller(object):
 
         # get data from GameStatus
         # current shape info
-        CurrentShapeDirectionRange = GameStatus["block_info"]["currentShape"]["direction_range"]
-        self.CurrentShape_class = GameStatus["block_info"]["currentShape"]["class"]
+        CurrentShapeDirectionRange = GameStatus["block_info"]["currentShape"]["direction_range"] # reference dictionary type list
+        self.CurrentShape_class = GameStatus["block_info"]["currentShape"]["class"] # "self.~" means this class elements
         # next shape info
-        NextShapeDirectionRange = GameStatus["block_info"]["nextShape"]["direction_range"]
+        NextShapeDirectionRange = GameStatus["block_info"]["nextShape"]["direction_range"] 
         self.NextShape_class = GameStatus["block_info"]["nextShape"]["class"]
         # current board info
         self.board_backboard = GameStatus["field_info"]["backboard"]
@@ -45,9 +46,9 @@ class Block_Controller(object):
         self.ShapeNone_index = GameStatus["debug_info"]["shape_info"]["shapeNone"]["index"]
 
         # search best nextMove -->
-        strategy = None
+        strategy = None # Initialize
         LatestEvalValue = -100000
-        # search with current block Shape
+        # search with current block Shape 
         for direction0 in CurrentShapeDirectionRange:
             # search with x range
             x0Min, x0Max = self.getSearchXRange(self.CurrentShape_class, direction0)
@@ -220,7 +221,9 @@ class Block_Controller(object):
 
         # calc Evaluation Value
         score = 0
-        score = score + fullLines * 10.0           # try to delete line 
+        score = score + fullLines * fullLines * 10.0           # arranged func. 
+	
+# origin:        score = score + fullLines *  10.0           # try to delete line 
         score = score - nHoles * 1.0               # try not to make hole
         score = score - nIsolatedBlocks * 1.0      # try not to make isolated block
         score = score - absDy * 1.0                # try to put block smoothly
