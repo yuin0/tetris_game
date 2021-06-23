@@ -8,7 +8,7 @@ import copy # To copy objects: "copy" does not copy object's contents: the copy 
 
 class Block_Controller(object): # object is not necessary (to use python2): Block_controller() is also OK
 
-    # init parameter <- How to use?
+    # init parameter
     board_backboard = 0
     board_data_width = 0
     board_data_height = 0
@@ -159,13 +159,13 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
 
         ### check board
         # each y line
-        for y in range(height - 1, 0, -1):
+        for y in range(height - 1, 0, -1): # range(start, stop, step) from top line to bottom line.
             hasHole = False
             hasBlock = False
             # each x line
             for x in range(width):
                 ## check if hole or block..
-                if board[y * self.board_data_width + x] == self.ShapeNone_index:
+                if board[y * self.board_data_width + x] == self.ShapeNone_index: # ShapeNone=0, so serach points printing "0".
                     # hole
                     hasHole = True
                     holeCandidates[x] += 1  # just candidates in each column..
@@ -174,15 +174,15 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
                     hasBlock = True
                     BlockMaxY[x] = height - y                # update blockMaxY
                     if holeCandidates[x] > 0:
-                        holeConfirm[x] += holeCandidates[x]  # update number of holes in target column..
-                        holeCandidates[x] = 0                # reset
+                        holeConfirm[x] += holeCandidates[x]  # update number of holes in target column
+                        holeCandidates[x] = 0                # reset. when both 0 & blocks exists in the line, "0" is regarded as a hole.
                     if holeConfirm[x] > 0:
-                        nIsolatedBlocks += 1                 # update number of isolated blocks
+                        nIsolatedBlocks += 1                 # update number of isolated blocks.if hole exits,isolatedBlock also exists.
 
-            if hasBlock == True and hasHole == False:
+            if hasBlock == True and hasHole == False: # at least one hole exists, hasHole will be true.
                 # filled with block
                 fullLines += 1
-            elif hasBlock == True and hasHole == True:
+            elif hasBlock == True and hasHole == True: # the line to be checked, for there are both blocks and holes.
                 # do nothing
                 pass
             elif hasBlock == False:
@@ -190,7 +190,7 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
                 pass
 
         # nHoles
-        for x in holeConfirm:
+        for x in holeConfirm: # holeConfirm is an array whose element is a number of holes at Coord x.
             nHoles += abs(x)
 
         ### absolute differencial value of MaxY
