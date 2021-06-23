@@ -106,7 +106,8 @@ docker run -p 6080:80 --shm-size=512m seigott/tetris_game_docker
 
 ## pytorch v1.4 インストール方法
 
-ubuntu18.04環境では、以下のようにしてインストールできることを確認済
+ubuntu18.04環境では、以下のようにしてインストールできることを確認済<br>
+[pytorch v1.4 インストール済のDocker環境（お試し版）](https://github.com/seigot/tetris_game/blob/master/docker/README.md)を作成しました。追加で必要なものがあればDockerfileを更新して下さい。
 
 ```
 function install_torch(){
@@ -120,5 +121,12 @@ function install_torch(){
     pip install 'pillow<7'
 }
 ```
+## Dockerはコンテナ終了の度にデータが消えて手間が掛かるので何とかしたい
+[WSL(Windows Subsystem for Linux)を使う場合](https://github.com/seigot/tetris_game/blob/master/doc/files/install_windows_wsl.md)の手順を用意しました。<br>
+（kyadさんありがとうございます）<br>
+<br>
+追記：cygwin環境構築手順<br>
+[isshy-youさんによる`Cygwin Install for tetris_game`構築手順](https://github.com/isshy-you/tetris_game/wiki/Cygwin-Install-for-tetris_game)<br>
+（isshy-youさんありがとうございます）
 
 ### 以下、順次追記
