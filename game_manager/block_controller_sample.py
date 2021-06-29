@@ -56,23 +56,29 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
                 # get board data, as if dropdown block
                 board = self.getBoard(self.board_backboard, self.CurrentShape_class, direction0, x0)
 
-                # evaluate board
-                EvalValue = self.calcEvaluationValueSample(board)
-                # update best move
-                if EvalValue > LatestEvalValue:
-                    strategy = (direction0, x0, 1, 1)
-                    LatestEvalValue = EvalValue
-
-                ###test
-                ###for direction1 in NextShapeDirectionRange:
-                ###  x1Min, x1Max = self.getSearchXRange(self.NextShape_class, direction1)
-                ###  for x1 in range(x1Min, x1Max):
-                ###        board2 = self.getBoard(board, self.NextShape_class, direction1, x1)
-                ###        EvalValue = self.calcEvaluationValueSample(board2)
-                ###        if EvalValue > LatestEvalValue:
-                ###            strategy = (direction0, x0, 1, 1)
-                ###            LatestEvalValue = EvalValue
-        # search best nextMove <--
+                for direction1 in NextShapeDirectionRange:
+                    x1Min, x1Max = self.getSearchXRange(self.NextShape_class, direction1)
+                    for x1 in range(x1Min, x1Max):
+                        # get next board Data
+                        boardNext = self.getBoard(board, self.NextShape_class, direction1, x1) 
+        
+                        # evaluate board
+                        EvalValue = self.calcEvaluationValueSample(boardNext)
+                        # update best move
+                        if EvalValue > LatestEvalValue:
+                            strategy = (direction0, x0, 1, 1)
+                            LatestEvalValue = EvalValue
+        
+                        ###test
+                        ###for direction1 in NextShapeDirectionRange:
+                        ###  x1Min, x1Max = self.getSearchXRange(self.NextShape_class, direction1)
+                        ###  for x1 in range(x1Min, x1Max):
+                        ###        board2 = self.getBoard(board, self.NextShape_class, direction1, x1)
+                        ###        EvalValue = self.calcEvaluationValueSample(board2)
+                        ###        if EvalValue > LatestEvalValue:
+                        ###            strategy = (direction0, x0, 1, 1)
+                        ###            LatestEvalValue = EvalValue
+                # search best nextMove <--
 
         print("===", datetime.now() - t1)
         nextMove["strategy"]["direction"] = strategy[0]
@@ -164,7 +170,7 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
             hasBlock = False
             # each x line
             for x in range(width):
-                ## check if hole or block..
+                ## check if hole or block.
                 if board[y * self.board_data_width + x] == self.ShapeNone_index: # ShapeNone=0, so serach points printing "0".
                     # hole
                     hasHole = True
@@ -173,18 +179,19 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
                     # block
                     hasBlock = True
                     BlockMaxY[x] = height - y                # update blockMaxY
-                    if holeCandidates[x] > 0:
-                        holeConfirm[x] += holeCandidates[x]  # update number of holes in target column
-                        holeCandidates[x] = 0                # reset. when both 0 & blocks exists in the line, "0" is regarded as a hole.
-                    if holeConfirm[x] > 0:
-                        nIsolatedBlocks += 1                 # update number of isolated blocks.if hole exits,isolatedBlock also exists.
-
             if hasBlock == True and hasHole == False: # at least one hole exists, hasHole will be true.
                 # filled with block
                 fullLines += 1
             elif hasBlock == True and hasHole == True: # the line to be checked, for there are both blocks and holes.
                 # do nothing
-                pass
+                for x in range(width):
+                    if board[y * self.board_data_width + x] != self.ShapeNone_index: # ShapeNone=0, so serach points printing "0".
+                        if holeCandidates[x] > 0:
+                            holeConfirm[x] += holeCandidates[x]  # update number of holes in target column
+                            holeCandidates[x] = 0                # reset. when both 0 & blocks exists in the line, "0" is regarded as a hole.
+                        if holeConfirm[x] > 0:
+                            nIsolatedBlocks += 1                 # update number of isolated blocks.if hole exits,isolatedBlock also exists.
+    
             elif hasBlock == False:
                 # no block line (and ofcourse no hole)
                 pass
@@ -221,8 +228,8 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
 
         # calc Evaluation Value
         score = 0
-        score = score + fullLines *  10.0           # try to delete line 
-        score = score - nHoles * 1.0               # try not to make hole
+        #score = score + fullLines *  10.0           # try to delete line 
+        score = score - nHoles * 10.0               # try not to make hole
         score = score - nIsolatedBlocks * 1.0      # try not to make isolated block
         score = score - absDy * 1.0                # try to put block smoothly
         #score = score - maxDy * 0.3                # maxDy
