@@ -211,7 +211,7 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
         #### maxDy
         #maxDy = max(BlockMaxY) - min(BlockMaxY)
         #### maxHeight
-        #maxHeight = max(BlockMaxY) - fullLines
+#       maxHeight = max(BlockMaxY) - fullLines
 
         ## statistical data
         #### stdY
@@ -228,12 +228,13 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
 
         # calc Evaluation Value
         score = 0
-        #score = score + fullLines *  10.0           # try to delete line 
+#        if fullLines > 1:
+#            score = score + fullLines * 10.0         # try to delete line 
         score = score - nHoles * 10.0               # try not to make hole
         score = score - nIsolatedBlocks * 1.0      # try not to make isolated block
-        score = score - absDy * 1.0                # try to put block smoothly
+        score = score - absDy * 1.0                 # try to put block smoothly
         #score = score - maxDy * 0.3                # maxDy
-        #score = score - maxHeight * 5              # maxHeight
+#        score = score - maxHeight * maxHeight * 0.1              # maxHeight
         #score = score - stdY * 1.0                 # statistical data
         #score = score - stdDY * 0.01               # statistical data
 
