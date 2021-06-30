@@ -69,15 +69,15 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
                             strategy = (direction0, x0, 1, 1)
                             LatestEvalValue = EvalValue
         
-                        ###test
-                        ###for direction1 in NextShapeDirectionRange:
-                        ###  x1Min, x1Max = self.getSearchXRange(self.NextShape_class, direction1)
-                        ###  for x1 in range(x1Min, x1Max):
-                        ###        board2 = self.getBoard(board, self.NextShape_class, direction1, x1)
-                        ###        EvalValue = self.calcEvaluationValueSample(board2)
-                        ###        if EvalValue > LatestEvalValue:
-                        ###            strategy = (direction0, x0, 1, 1)
-                        ###            LatestEvalValue = EvalValue
+                ###test
+                ###for direction1 in NextShapeDirectionRange:
+                ###  x1Min, x1Max = self.getSearchXRange(self.NextShape_class, direction1)
+                ###  for x1 in range(x1Min, x1Max):
+                ###        board2 = self.getBoard(board, self.NextShape_class, direction1, x1)
+                ###        EvalValue = self.calcEvaluationValueSample(board2)
+                ###        if EvalValue > LatestEvalValue:
+                ###            strategy = (direction0, x0, 1, 1)
+                ###            LatestEvalValue = EvalValue
                 # search best nextMove <--
 
         print("===", datetime.now() - t1)
@@ -183,12 +183,11 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
                 # filled with block
                 fullLines += 1
             elif hasBlock == True and hasHole == True: # the line to be checked, for there are both blocks and holes.
-                # do nothing
                 for x in range(width):
                     if board[y * self.board_data_width + x] != self.ShapeNone_index: # ShapeNone=0, so serach points printing "0".
                         if holeCandidates[x] > 0:
                             holeConfirm[x] += holeCandidates[x]  # update number of holes in target column
-                            holeCandidates[x] = 0                # reset. when both 0 & blocks exists in the line, "0" is regarded as a hole.
+                            holeCandidates[x] = 0                # reset.
                         if holeConfirm[x] > 0:
                             nIsolatedBlocks += 1                 # update number of isolated blocks.if hole exits,isolatedBlock also exists.
     
