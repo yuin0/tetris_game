@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+
 # -*- coding: utf-8 -*-
 
 from datetime import datetime # To pick up date
@@ -55,6 +55,8 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
             for x0 in range(x0Min, x0Max):
                 # get board data, as if dropdown block
                 board = self.getBoard(self.board_backboard, self.CurrentShape_class, direction0, x0)
+                offsetFL = -self.getFullLines(board)
+                print(offsetFL)
 
                 for direction1 in NextShapeDirectionRange:
                     x1Min, x1Max = self.getSearchXRange(self.NextShape_class, direction1)
@@ -63,7 +65,7 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
                         boardNext = self.getBoard(board, self.NextShape_class, direction1, x1) 
         
                         # evaluate board
-                        EvalValue = self.calcEvaluationValueSample(boardNext)
+                        EvalValue = self.calcEvaluationValueSample(boardNext, offsetFL)
                         # update best move
                         if EvalValue > LatestEvalValue:
                             strategy = (direction0, x0, 1, 1)
@@ -144,8 +146,21 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
             _board[(_y + dy) * self.board_data_width + _x] = Shape_class.shape
         return _board
 
+    def getFullLines(self, board):
+        preFullLines = 0
+        width = self.board_data_width
+        height = self.board_data_height
+        for y in range(height):
+            brocks = 0
+            for x in range(width):
+                if board[ y * width + x] == self.ShapeNone_index:
+                    break
+                brocks += 1
+            if brocks == width:
+                preFullLines += 1
+        return preFullLines
 
-    def calcEvaluationValueSample(self, board):
+    def calcEvaluationValueSample(self, board, offsetFL=0):
         #
         # sample function of evaluate board.
         #
@@ -154,7 +169,7 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
 
         # evaluation paramters
         ## lines to be removed
-        fullLines = 0
+        fullLines = offsetFL
         ## number of holes or blocks in the line.
         nHoles, nIsolatedBlocks = 0, 0
         ## absolute differencial value of MaxY
@@ -243,10 +258,14 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
 
         # calc Evaluation Value
         score = 0
-        if fullLines ==  4:
+        if fullLines == 4:
             score = score + fullLines * 100
         elif fullLines > 0:
-            score = score - (6 / fullLines)
+            score = score - 6/fullLines
+        if offsetFL == -4:
+            score = score - offsetFL * 100
+        elif offsetFL < 0:
+            score = score + 6/offsetFL
         score = score - nHoles * 10.0               # try not to make hole
         score = score - nIsolatedBlocks * 1.0      # try not to make isolated block
         score = score - absDy * 1.0                 # try to put block smoothly
