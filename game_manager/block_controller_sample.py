@@ -144,6 +144,7 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
             _board[(_y + dy) * self.board_data_width + _x] = Shape_class.shape
         return _board
 
+
     def calcEvaluationValueSample(self, board):
         #
         # sample function of evaluate board.
@@ -162,6 +163,8 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
         BlockMaxY = [0] * width
         holeCandidates = [0] * width
         holeConfirm = [0] * width
+        ## number of horizontal changes
+        horizontalChange = [0] * height
 
         ### check board
         # each y line
@@ -178,13 +181,21 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
                 else:
                     # block
                     hasBlock = True
-                    BlockMaxY[x] = height - y                # update blockMaxY
+                # count number of change horizontal
+#                if x > 0:
+#                    if board[y * width + x] == self.ShapeNone_index:
+#                        if board[y * width + x - 1] != self.ShapeNone_index:
+#                            horizontalChange[y] += 1
+#                    elif board[y * width + x - 1] == self.ShapeNone_index:
+#                        horizontalChange[y] += 1
+
             if hasBlock == True and hasHole == False: # at least one hole exists, hasHole will be true.
                 # filled with block
                 fullLines += 1
             elif hasBlock == True and hasHole == True: # the line to be checked, for there are both blocks and holes.
                 for x in range(width):
                     if board[y * self.board_data_width + x] != self.ShapeNone_index: # ShapeNone=0, so serach points printing "0".
+                        BlockMaxY[x] = height - y                # update blockMaxY
                         if holeCandidates[x] > 0:
                             holeConfirm[x] += holeCandidates[x]  # update number of holes in target column
                             holeCandidates[x] = 0                # reset.
@@ -207,10 +218,15 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
         for x in BlockMaxDy:
             absDy += abs(x)
 
+        # number of horizontal changes
+        numHorizontalChange = 0
+        for y in horizontalChange:
+            numHorizontalChange += y
+
         #### maxDy
         #maxDy = max(BlockMaxY) - min(BlockMaxY)
         #### maxHeight
-#       maxHeight = max(BlockMaxY) - fullLines
+        maxHeight = max(BlockMaxY) - fullLines
 
         ## statistical data
         #### stdY
@@ -227,13 +243,17 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
 
         # calc Evaluation Value
         score = 0
-#        if fullLines > 1:
-#            score = score + fullLines * 10.0         # try to delete line 
+        if fullLines ==  4:
+            score = score + fullLines * 100
+        elif fullLines > 0:
+            score = score - (6 / fullLines)
         score = score - nHoles * 10.0               # try not to make hole
         score = score - nIsolatedBlocks * 1.0      # try not to make isolated block
         score = score - absDy * 1.0                 # try to put block smoothly
+        #score = score - numHorizontalChange * 1.0
         #score = score - maxDy * 0.3                # maxDy
-#        score = score - maxHeight * maxHeight * 0.1              # maxHeight
+        if maxHeight > 16:
+            score = score - maxHeight * 5              # maxHeight
         #score = score - stdY * 1.0                 # statistical data
         #score = score - stdDY * 0.01               # statistical data
 
