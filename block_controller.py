@@ -71,20 +71,18 @@ class Block_Controller(object):  # object is not necessary (to use python2)
                 # get board data, as if dropdown block
                 board = self.getBoard(self.board_backboard,
                                       self.CurrentShape_class, direction0, x0)
-                board, offsetFL = self.getNextBoard(board)
+                board, offsetFL = self.getBoardWithoutFL(board)
 
                 for direction1 in NextShapeDirectionRange:
                     x1Min, x1Max = self.getSearchXRange(self.NextShape_class,
                                                         direction1)
                     for x1 in range(x1Min, x1Max):
                         # get next board Data
-                        boardNext = self.getBoard(board, self.NextShape_class,
-                                                  direction1, x1)
-                        boardNext, fullLines = self.getNextBoard(boardNext)
+                        board1 = self.getBoard(board, self.NextShape_class,
+                                               direction1, x1)
+                        board1, fullLines = self.getBoardWithoutFL(board1)
                         # evaluate board
-                        EvalValue\
-                            = self.calcEvaluationValueSample(boardNext,
-                                                             offsetFL,
+                        EvalValue = self.calcEvaluationValue(board1, offsetFL,
                                                              fullLines)
                         # update best move
                         if EvalValue > LatestEvalValue:
@@ -92,19 +90,6 @@ class Block_Controller(object):  # object is not necessary (to use python2)
                             LatestEvalValue = EvalValue
                             nowFL = offsetFL
                             nextFL = fullLines
-
-                # test
-                # for direction1 in NextShapeDirectionRange:
-                #   x1Min, x1Max\
-                #    = self.getSearchXRange(self.NextShape_class, direction1)
-                #   for x1 in range(x1Min, x1Max):
-                #         board2 = self.getBoard(board, self.NextShape_class,
-                #                                direction1, x1)
-                #         EvalValue = self.calcEvaluationValueSample(board2)
-                #         if EvalValue > LatestEvalValue:
-                #             strategy = (direction0, x0, 1, 1)
-                #             LatestEvalValue = EvalValue
-                # search best nextMove <--
 
         print("===", datetime.now() - t1)
         nextMove["strategy"]["direction"] = strategy[0]
@@ -176,7 +161,7 @@ class Block_Controller(object):  # object is not necessary (to use python2)
             _board[(_y + dy) * self.board_data_width + _x] = Shape_class.shape
         return _board
 
-    def getNextBoard(self, board):
+    def getBoardWithoutFL(self, board):
         width = self.board_data_width
         height = self.board_data_height
         nextBoard = [0] * width * height
@@ -193,7 +178,7 @@ class Block_Controller(object):  # object is not necessary (to use python2)
             newY -= 1
         return nextBoard, fullLines
 
-    def calcEvaluationValueSample(self, board, offsetFL, fullLines):
+    def calcEvaluationValue(self, board, offsetFL, fullLines):
         #
         # sample function of evaluate board.
         #
@@ -210,7 +195,9 @@ class Block_Controller(object):  # object is not necessary (to use python2)
         BlockMaxY = [0] * width
         holeCandidates = [0] * width
         holeConfirm = [0] * width
+        # isolated blocks of x
         isolatedBlocks = [0] * width
+        # the highest hole of x
         holeMaxY = [0] * width
         # number of horizontal changes
 
@@ -236,7 +223,7 @@ class Block_Controller(object):  # object is not necessary (to use python2)
                         # update number of holes in target column
                         holeConfirm[x] += holeCandidates[x]
                         holeCandidates[x] = 0  # reset.
-                        holeMaxY[x] = height - y - 1
+                        holeMaxY[x] = height - y - 1  # update the highest hole
                     if holeConfirm[x] > 0:
                         # update number of isolated blocks.
                         # if hole exits,isolatedBlock also exists.
@@ -271,7 +258,7 @@ class Block_Controller(object):  # object is not necessary (to use python2)
             absDy += 3 * (abs(BlockMaxDy[0]) + abs(BlockMaxDy[-1]))
 
         # isolatedBlocksPenalty
-        isolatedBlocksPenalty = sum(map(mul, isolatedBlocks, holeMaxY))
+        onHolePenalty = sum(map(mul, isolatedBlocks, holeMaxY))
 
         maxDy = max(BlockMaxY) - sorted(BlockMaxY)[2]
 
@@ -301,7 +288,7 @@ class Block_Controller(object):  # object is not necessary (to use python2)
         elif fullLines < 4 and offsetFL > 0 and maxHeight < 13:
             score = score - 9 / offsetFL
         score = score - nHoles * 10.0  # try not to make hole
-        score = score - isolatedBlocksPenalty * 0.3
+        score = score - onHolePenalty * 0.3
         score = score - absDy * 1.0                 # try to put block smoothly
         if maxHeight > 12:
             score = score - maxHeight * 5              # maxHeight
