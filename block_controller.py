@@ -267,6 +267,8 @@ class Block_Controller(object):  # object is not necessary (to use python2)
             BlockMaxDy += [val]
         for x in BlockMaxDy:
             absDy += abs(x)
+        if BlockMaxDy[0] < -3 and BlockMaxDy[-1] > 3:
+            absDy += 3 * (abs(BlockMaxDy[0]) + abs(BlockMaxDy[-1]))
 
         # isolatedBlocksPenalty
         isolatedBlocksPenalty = sum(map(mul, isolatedBlocks, holeMaxY))
