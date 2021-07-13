@@ -281,12 +281,18 @@ class Block_Controller(object):  # object is not necessary (to use python2)
         score = 0
         if fullLines == 4:
             score = score + fullLines * 100
-        elif fullLines > 0 and maxHeight < 13:
-            score = score - 9 / fullLines
+        elif fullLines > 0:
+            if maxHeight < 9:
+                score = score - 9
+            else:
+                score = score + fullLines
         if offsetFL == 4:
             score = score + offsetFL * 100
-        elif fullLines < 4 and offsetFL > 0 and maxHeight < 13:
-            score = score - 9 / offsetFL
+        elif fullLines < 4 and offsetFL > 0:
+            if maxHeight < 9:
+                score = score - 9
+            else:
+                score = score + offsetFL
         score = score - nHoles * 10.0  # try not to make hole
         score = score - onHolePenalty * 0.3
         score = score - absDy * 1.0                 # try to put block smoothly
