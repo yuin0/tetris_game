@@ -178,6 +178,19 @@ class Block_Controller(object):  # object is not necessary (to use python2)
             newY -= 1
         return nextBoard, fullLines
 
+    def calcWellDepth(self, blockMaxY):
+        leftDepth = [3] * len(blockMaxY)
+        rightDepth = [3] * len(blockMaxY)
+        wellDepth = [0] * len(blockMaxY)
+        for x in range(len(blockMaxY)):
+            if(x > 0):
+                leftDepth[x] = blockMaxY[x - 1] - blockMaxY[x]
+            if(x < len(blockMaxY) - 1):
+                rightDepth[x] = blockMaxY[x + 1] - blockMaxY[x]
+            wellDepth[x] = min(leftDepth[x], rightDepth[x])
+
+        return wellDepth
+
     def calcEvaluationValue(self, board, offsetFL, fullLines):
         #
         # sample function of evaluate board.
@@ -262,6 +275,12 @@ class Block_Controller(object):  # object is not necessary (to use python2)
 
         maxDy = max(BlockMaxY) - sorted(BlockMaxY)[2]
 
+        wellDepth = self.calcWellDepth(BlockMaxY)
+        wellPenalty, wellNum = 0, 0
+        for x in range(width):
+            if wellDepth[x] > 2:
+                wellNum += 1
+                wellPenalty += wellDepth[x] if wellNum > 1 else 0
         # statistical data
         # stdY
         # if len(BlockMaxY) <= 0:
@@ -299,6 +318,7 @@ class Block_Controller(object):  # object is not necessary (to use python2)
         if maxHeight > 12:
             score = score - maxHeight * 5              # maxHeight
         score = score - maxDy * 1.0
+        score = score - wellPenalty * 5
         # score = score - stdY * 1.0                 # statistical data
         # score = score - stdDY * 0.01               # statistical data
 

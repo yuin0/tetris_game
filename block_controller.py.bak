@@ -1,12 +1,17 @@
-
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-from datetime import datetime # To pick up date
-import pprint # To customize output
-import copy # To copy objects: "copy" does not copy object's contents: the copy has contents referencing to the same of copied one.
-            # "deepCopy" copies object's contents too: the copy has contents that does not reference to the copied one.
+from datetime import datetime  # To pick up date
+from operator import mul  # To multiple lists
+import pprint  # To customize output
+import copy  # To copy objects
+# "copy" does not copy object's contents:
+# the copy has contents referencing to the same of copied one.
+# "deepCopy" copies object's contents too:
+# the copy has contents that does not reference to the copied one.
 
-class Block_Controller(object): # object is not necessary (to use python2): Block_controller() is also OK
+
+class Block_Controller(object):  # object is not necessary (to use python2)
 
     # init parameter
     board_backboard = 0
@@ -19,67 +24,72 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
     # GetNextMove is main function.
     # input
     #    nextMove : nextMove structure which is empty.
-    #    GameStatus : block/field/judge/debug information. 
+    #    GameStatus : block/field/judge/debug information.
     #                 in detail see the internal GameStatus data. @game_manager
     # output
-    #    nextMove : nextMove structure which includes next shape position and the other.
+    #    nextMove : nextMove structure which includes next shape position.
     def GetNextMove(self, nextMove, GameStatus):
 
         t1 = datetime.now()
 
         # print GameStatus
         print("=================================================>")
-        pprint.pprint(GameStatus, width = 61, compact = True)
+        pprint.pprint(GameStatus, width=61, compact=True)
 
         # get data from GameStatus
         # current shape info
-        CurrentShapeDirectionRange = GameStatus["block_info"]["currentShape"]["direction_range"] # reference dictionary type list
-        self.CurrentShape_class = GameStatus["block_info"]["currentShape"]["class"] # "self.~" means this class elements
+        CurrentShapeDirectionRange\
+            = GameStatus["block_info"]["currentShape"]["direction_range"]
+        # reference dictionary type list
+        self.CurrentShape_class\
+            = GameStatus["block_info"]["currentShape"]["class"]
+        # "self.~" means this class elements
         # next shape info
-        NextShapeDirectionRange = GameStatus["block_info"]["nextShape"]["direction_range"] 
-        self.NextShape_class = GameStatus["block_info"]["nextShape"]["class"]
+        NextShapeDirectionRange\
+            = GameStatus["block_info"]["nextShape"]["direction_range"]
+        self.NextShape_class\
+            = GameStatus["block_info"]["nextShape"]["class"]
         # current board info
         self.board_backboard = GameStatus["field_info"]["backboard"]
         # default board definition
         self.board_data_width = GameStatus["field_info"]["width"]
         self.board_data_height = GameStatus["field_info"]["height"]
-        self.ShapeNone_index = GameStatus["debug_info"]["shape_info"]["shapeNone"]["index"]
+        self.ShapeNone_index\
+            = GameStatus["debug_info"]["shape_info"]["shapeNone"]["index"]
 
         # search best nextMove -->
-        strategy = None # Initialize
+        strategy = None  # Initialize
         LatestEvalValue = -100000
-        # search with current block Shape 
+        nowFL = 0
+        nextFL = 0
+        # search with current block Shape
         for direction0 in CurrentShapeDirectionRange:
             # search with x range
-            x0Min, x0Max = self.getSearchXRange(self.CurrentShape_class, direction0)
+            x0Min, x0Max\
+                = self.getSearchXRange(self.CurrentShape_class, direction0)
             for x0 in range(x0Min, x0Max):
                 # get board data, as if dropdown block
-                board = self.getBoard(self.board_backboard, self.CurrentShape_class, direction0, x0)
-                offsetFL = -self.getFullLines(board)
+                board = self.getBoard(self.board_backboard,
+                                      self.CurrentShape_class, direction0, x0)
+                board, offsetFL = self.getBoardWithoutFL(board)
 
                 for direction1 in NextShapeDirectionRange:
-                    x1Min, x1Max = self.getSearchXRange(self.NextShape_class, direction1)
+                    x1Min, x1Max = self.getSearchXRange(self.NextShape_class,
+                                                        direction1)
                     for x1 in range(x1Min, x1Max):
                         # get next board Data
-                        boardNext = self.getBoard(board, self.NextShape_class, direction1, x1) 
-        
+                        board1 = self.getBoard(board, self.NextShape_class,
+                                               direction1, x1)
+                        board1, fullLines = self.getBoardWithoutFL(board1)
                         # evaluate board
-                        EvalValue = self.calcEvaluationValueSample(boardNext, offsetFL)
+                        EvalValue = self.calcEvaluationValue(board1, offsetFL,
+                                                             fullLines)
                         # update best move
                         if EvalValue > LatestEvalValue:
                             strategy = (direction0, x0, 1, 1)
                             LatestEvalValue = EvalValue
-        
-                ###test
-                ###for direction1 in NextShapeDirectionRange:
-                ###  x1Min, x1Max = self.getSearchXRange(self.NextShape_class, direction1)
-                ###  for x1 in range(x1Min, x1Max):
-                ###        board2 = self.getBoard(board, self.NextShape_class, direction1, x1)
-                ###        EvalValue = self.calcEvaluationValueSample(board2)
-                ###        if EvalValue > LatestEvalValue:
-                ###            strategy = (direction0, x0, 1, 1)
-                ###            LatestEvalValue = EvalValue
-                # search best nextMove <--
+                            nowFL = offsetFL
+                            nextFL = fullLines
 
         print("===", datetime.now() - t1)
         nextMove["strategy"]["direction"] = strategy[0]
@@ -87,14 +97,16 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
         nextMove["strategy"]["y_operation"] = strategy[2]
         nextMove["strategy"]["y_moveblocknum"] = strategy[3]
         print(nextMove)
+        print("Evaluation: ", LatestEvalValue)
+        print("nowFL: ", nowFL, "nextFL: ", nextFL)
         print("###### SAMPLE CODE ######")
         return nextMove
 
     def getSearchXRange(self, Shape_class, direction):
         #
         # get x range from shape direction.
-        #
-        minX, maxX, _, _ = Shape_class.getBoundingOffsets(direction) # get shape x offsets[minX,maxX] as relative value.
+        # get shape x offsets[minX,maxX] as relative value.
+        minX, maxX, _, _ = Shape_class.getBoundingOffsets(direction)
         xMin = -1 * minX
         xMax = self.board_data_width - maxX
         return xMin, xMax
@@ -103,11 +115,12 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
         #
         # get coordinate array by given shape.
         #
-        coordArray = Shape_class.getCoords(direction, x, y) # get array from shape direction, x, y.
+        # get array from shape direction, x, y.
+        coordArray = Shape_class.getCoords(direction, x, y)
         return coordArray
 
     def getBoard(self, board_backboard, Shape_class, direction, x):
-        # 
+        #
         # get new board.
         #
         # copy backboard data to make new board.
@@ -117,16 +130,19 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
         return _board
 
     def dropDown(self, board, Shape_class, direction, x):
-        # 
+        #
         # internal function of getBoard.
         # -- drop down the shape on the board.
-        # 
+        #
         dy = self.board_data_height - 1
         coordArray = self.getShapeCoordArray(Shape_class, direction, x, 0)
         # update dy
         for _x, _y in coordArray:
             _yy = 0
-            while _yy + _y < self.board_data_height and (_yy + _y < 0 or board[(_y + _yy) * self.board_data_width + _x] == self.ShapeNone_index):
+            while _yy + _y < self.board_data_height \
+                    and (_yy + _y < 0
+                         or board[(_y + _yy) * self.board_data_width + _x]
+                         == self.ShapeNone_index):
                 _yy += 1
             _yy -= 1
             if _yy < dy:
@@ -145,21 +161,24 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
             _board[(_y + dy) * self.board_data_width + _x] = Shape_class.shape
         return _board
 
-    def getFullLines(self, board):
-        preFullLines = 0
+    def getBoardWithoutFL(self, board):
         width = self.board_data_width
         height = self.board_data_height
-        for y in range(height):
-            brocks = 0
+        nextBoard = [0] * width * height
+        newY = height - 1
+        fullLines = 0
+        for y in range(height - 1, -1, -1):
+            blockCount = sum([1 if board[x + y * width] > 0 else 0
+                             for x in range(width)])
+            if not blockCount < width:
+                fullLines += 1
+                continue
             for x in range(width):
-                if board[ y * width + x] == self.ShapeNone_index:
-                    break
-                brocks += 1
-            if brocks == width:
-                preFullLines += 1
-        return preFullLines
+                nextBoard[x + newY * width] = board[x + y * width]
+            newY -= 1
+        return nextBoard, fullLines
 
-    def calcEvaluationValueSample(self, board, offsetFL=0):
+    def calcEvaluationValue(self, board, offsetFL, fullLines):
         #
         # sample function of evaluate board.
         #
@@ -167,123 +186,125 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
         height = self.board_data_height
 
         # evaluation paramters
-        ## lines to be removed
-        fullLines = offsetFL
-        ## number of holes or blocks in the line.
-        nHoles, nIsolatedBlocks = 0, 0
-        ## absolute differencial value of MaxY
+        # number of holes or blocks in the line.
+        nHoles = 0
+        # nIsolatedBlocks = 0
+        # absolute differencial value of MaxY
         absDy = 0
-        ## how blocks are accumlated
+        # how blocks are accumlated
         BlockMaxY = [0] * width
         holeCandidates = [0] * width
         holeConfirm = [0] * width
-        ## number of horizontal changes
-        horizontalChange = [0] * height
+        # isolated blocks of x
+        isolatedBlocks = [0] * width
+        # the highest hole of x
+        holeMaxY = [0] * width
+        # number of horizontal changes
 
-        ### check board
+        # check board
         # each y line
-        for y in range(height - 1, 0, -1): # range(start, stop, step) from top line to bottom line.
+        # range(start, stop, step) from top line to bottom line.
+        for y in range(height - 1, 0, -1):
             hasHole = False
             hasBlock = False
             # each x line
             for x in range(width):
-                ## check if hole or block.
-                if board[y * self.board_data_width + x] == self.ShapeNone_index: # ShapeNone=0, so serach points printing "0".
+                # check if hole or block.
+                if board[y * width + x] == self.ShapeNone_index:
+                    # ShapeNone=0, so serach points printing "0".
                     # hole
                     hasHole = True
                     holeCandidates[x] += 1  # just candidates in each column..
                 else:
                     # block
                     hasBlock = True
-                # count number of change horizontal
-#                if x > 0:
-#                    if board[y * width + x] == self.ShapeNone_index:
-#                        if board[y * width + x - 1] != self.ShapeNone_index:
-#                            horizontalChange[y] += 1
-#                    elif board[y * width + x - 1] == self.ShapeNone_index:
-#                        horizontalChange[y] += 1
-
-            if hasBlock == True and hasHole == False: # at least one hole exists, hasHole will be true.
+                    BlockMaxY[x] = height - y  # update blockMaxY
+                    if holeCandidates[x] > 0:
+                        # update number of holes in target column
+                        holeConfirm[x] += holeCandidates[x]
+                        holeCandidates[x] = 0  # reset.
+                        holeMaxY[x] = height - y - 1  # update the highest hole
+                    if holeConfirm[x] > 0:
+                        # update number of isolated blocks.
+                        # if hole exits,isolatedBlock also exists.
+                        isolatedBlocks[x] += 1
+            # at least one hole exists, hasHole will be true.
+            if hasBlock and not hasHole:
                 # filled with block
                 fullLines += 1
-            elif hasBlock == True and hasHole == True: # the line to be checked, for there are both blocks and holes.
-                for x in range(width):
-                    if board[y * self.board_data_width + x] != self.ShapeNone_index: # ShapeNone=0, so serach points printing "0".
-                        BlockMaxY[x] = height - y                # update blockMaxY
-                        if holeCandidates[x] > 0:
-                            holeConfirm[x] += holeCandidates[x]  # update number of holes in target column
-                            holeCandidates[x] = 0                # reset.
-                        if holeConfirm[x] > 0:
-                            nIsolatedBlocks += 1                 # update number of isolated blocks.if hole exits,isolatedBlock also exists.
-    
-            elif hasBlock == False:
+                # the line to be checked, for there are both blocks and holes.
+            elif hasBlock and hasHole:
+                pass
+            elif not hasBlock:
                 # no block line (and ofcourse no hole)
                 pass
 
         # nHoles
-        for x in holeConfirm: # holeConfirm is an array whose element is a number of holes at Coord x.
+        # holeConfirm is an Array whose item is holes of each x.
+        for x in holeConfirm:
             nHoles += abs(x)
 
-        ### absolute differencial value of MaxY
+        # maxHeight
+        maxHeight = max(BlockMaxY) - fullLines
+
+        # absolute differencial value of MaxY
         BlockMaxDy = []
         for i in range(len(BlockMaxY) - 1):
             val = BlockMaxY[i] - BlockMaxY[i+1]
             BlockMaxDy += [val]
         for x in BlockMaxDy:
             absDy += abs(x)
+        if BlockMaxDy[0] < -3 and BlockMaxDy[-1] > 3:
+            absDy += 3 * (abs(BlockMaxDy[0]) + abs(BlockMaxDy[-1]))
 
-        # number of horizontal changes
-        numHorizontalChange = 0
-        for y in horizontalChange:
-            numHorizontalChange += y
+        # isolatedBlocksPenalty
+        onHolePenalty = sum(map(mul, isolatedBlocks, holeMaxY))
 
-        #### maxDy
-        #maxDy = max(BlockMaxY) - min(BlockMaxY)
-        #### maxHeight
-        maxHeight = max(BlockMaxY) - fullLines
+        maxDy = max(BlockMaxY) - sorted(BlockMaxY)[2]
 
-        ## statistical data
-        #### stdY
-        #if len(BlockMaxY) <= 0:
+        # statistical data
+        # stdY
+        # if len(BlockMaxY) <= 0:
         #    stdY = 0
-        #else:
-        #    stdY = math.sqrt(sum([y ** 2 for y in BlockMaxY]) / len(BlockMaxY) - (sum(BlockMaxY) / len(BlockMaxY)) ** 2)
-        #### stdDY
-        #if len(BlockMaxDy) <= 0:
+        # else:
+        #    stdY = math.sqrt(sum([y ** 2 for y in BlockMaxY]) / len(BlockMaxY)
+        #                       - (sum(BlockMaxY) / len(BlockMaxY)) ** 2)
+        # stdDY
+        # if len(BlockMaxDy) <= 0:
         #    stdDY = 0
-        #else:
-        #    stdDY = math.sqrt(sum([y ** 2 for y in BlockMaxDy]) / len(BlockMaxDy) - (sum(BlockMaxDy) / len(BlockMaxDy)) ** 2)
-
+        # else:
+        #    stdDY = math.sqrt(sum([y ** 2 for y in BlockMaxDy])
+        #                       /len(BlockMaxDy)
+        #                      - (sum(BlockMaxDy) / len(BlockMaxDy)) ** 2)
 
         # calc Evaluation Value
         score = 0
         if fullLines == 4:
             score = score + fullLines * 100
         elif fullLines > 0:
-            if maxHeight > 16:
-                score = score + fullLines * 10    
+            if maxHeight < 9:
+                score = score - 9
             else:
-                score = score - 6/fullLines
-        if offsetFL == -4:
-            score = score - offsetFL * 100
-        elif fullLines < 4 & offsetFL < 0:
-            if maxHeight > 16:
-                score = score - fullLines * 10
+                score = score + fullLines
+        if offsetFL == 4:
+            score = score + offsetFL * 100
+        elif fullLines < 4 and offsetFL > 0:
+            if maxHeight < 9:
+                score = score - 9
             else:
-                score = score + 6/offsetFL
-        score = score - nHoles * 10.0               # try not to make hole
-        score = score - nIsolatedBlocks * 1.0      # try not to make isolated block
+                score = score + offsetFL
+        score = score - nHoles * 10.0  # try not to make hole
+        score = score - onHolePenalty * 0.3
         score = score - absDy * 1.0                 # try to put block smoothly
-        #score = score - numHorizontalChange * 1.0
-        #score = score - maxDy * 0.3                # maxDy
-        if maxHeight > 16:
+        if maxHeight > 12:
             score = score - maxHeight * 5              # maxHeight
-        #score = score - stdY * 1.0                 # statistical data
-        #score = score - stdDY * 0.01               # statistical data
+        score = score - maxDy * 1.0
+        # score = score - stdY * 1.0                 # statistical data
+        # score = score - stdDY * 0.01               # statistical data
 
-        # print(score, fullLines, nHoles, nIsolatedBlocks, maxHeight, stdY, stdDY, absDy, BlockMaxY)
+        # print(score, fullLines, nHoles, nIsolatedBlocks,
+        #       maxHeight, stdY, stdDY, absDy, BlockMaxY)
         return score
 
 
 BLOCK_CONTROLLER = Block_Controller()
-
