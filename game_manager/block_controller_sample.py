@@ -1,11 +1,12 @@
-#!/usr/bin/python3
+
 # -*- coding: utf-8 -*-
 
-from datetime import datetime
-import pprint
-import copy
+from datetime import datetime # To pick up date
+import pprint # To customize output
+import copy # To copy objects: "copy" does not copy object's contents: the copy has contents referencing to the same of copied one.
+            # "deepCopy" copies object's contents too: the copy has contents that does not reference to the copied one.
 
-class Block_Controller(object):
+class Block_Controller(object): # object is not necessary (to use python2): Block_controller() is also OK
 
     # init parameter
     board_backboard = 0
@@ -19,7 +20,7 @@ class Block_Controller(object):
     # input
     #    nextMove : nextMove structure which is empty.
     #    GameStatus : block/field/judge/debug information. 
-    #                 in detail see the internal GameStatus data.
+    #                 in detail see the internal GameStatus data. @game_manager
     # output
     #    nextMove : nextMove structure which includes next shape position and the other.
     def GetNextMove(self, nextMove, GameStatus):
@@ -32,10 +33,10 @@ class Block_Controller(object):
 
         # get data from GameStatus
         # current shape info
-        CurrentShapeDirectionRange = GameStatus["block_info"]["currentShape"]["direction_range"]
-        self.CurrentShape_class = GameStatus["block_info"]["currentShape"]["class"]
+        CurrentShapeDirectionRange = GameStatus["block_info"]["currentShape"]["direction_range"] # reference dictionary type list
+        self.CurrentShape_class = GameStatus["block_info"]["currentShape"]["class"] # "self.~" means this class elements
         # next shape info
-        NextShapeDirectionRange = GameStatus["block_info"]["nextShape"]["direction_range"]
+        NextShapeDirectionRange = GameStatus["block_info"]["nextShape"]["direction_range"] 
         self.NextShape_class = GameStatus["block_info"]["nextShape"]["class"]
         # current board info
         self.board_backboard = GameStatus["field_info"]["backboard"]
@@ -45,23 +46,30 @@ class Block_Controller(object):
         self.ShapeNone_index = GameStatus["debug_info"]["shape_info"]["shapeNone"]["index"]
 
         # search best nextMove -->
-        strategy = None
+        strategy = None # Initialize
         LatestEvalValue = -100000
-        # search with current block Shape
+        # search with current block Shape 
         for direction0 in CurrentShapeDirectionRange:
             # search with x range
             x0Min, x0Max = self.getSearchXRange(self.CurrentShape_class, direction0)
             for x0 in range(x0Min, x0Max):
                 # get board data, as if dropdown block
                 board = self.getBoard(self.board_backboard, self.CurrentShape_class, direction0, x0)
+                offsetFL = -self.getFullLines(board)
 
-                # evaluate board
-                EvalValue = self.calcEvaluationValueSample(board)
-                # update best move
-                if EvalValue > LatestEvalValue:
-                    strategy = (direction0, x0, 1, 1)
-                    LatestEvalValue = EvalValue
-
+                for direction1 in NextShapeDirectionRange:
+                    x1Min, x1Max = self.getSearchXRange(self.NextShape_class, direction1)
+                    for x1 in range(x1Min, x1Max):
+                        # get next board Data
+                        boardNext = self.getBoard(board, self.NextShape_class, direction1, x1) 
+        
+                        # evaluate board
+                        EvalValue = self.calcEvaluationValueSample(boardNext, offsetFL)
+                        # update best move
+                        if EvalValue > LatestEvalValue:
+                            strategy = (direction0, x0, 1, 1)
+                            LatestEvalValue = EvalValue
+        
                 ###test
                 ###for direction1 in NextShapeDirectionRange:
                 ###  x1Min, x1Max = self.getSearchXRange(self.NextShape_class, direction1)
@@ -71,7 +79,7 @@ class Block_Controller(object):
                 ###        if EvalValue > LatestEvalValue:
                 ###            strategy = (direction0, x0, 1, 1)
                 ###            LatestEvalValue = EvalValue
-        # search best nextMove <--
+                # search best nextMove <--
 
         print("===", datetime.now() - t1)
         nextMove["strategy"]["direction"] = strategy[0]
@@ -137,7 +145,21 @@ class Block_Controller(object):
             _board[(_y + dy) * self.board_data_width + _x] = Shape_class.shape
         return _board
 
-    def calcEvaluationValueSample(self, board):
+    def getFullLines(self, board):
+        preFullLines = 0
+        width = self.board_data_width
+        height = self.board_data_height
+        for y in range(height):
+            brocks = 0
+            for x in range(width):
+                if board[ y * width + x] == self.ShapeNone_index:
+                    break
+                brocks += 1
+            if brocks == width:
+                preFullLines += 1
+        return preFullLines
+
+    def calcEvaluationValueSample(self, board, offsetFL=0):
         #
         # sample function of evaluate board.
         #
@@ -146,7 +168,7 @@ class Block_Controller(object):
 
         # evaluation paramters
         ## lines to be removed
-        fullLines = 0
+        fullLines = offsetFL
         ## number of holes or blocks in the line.
         nHoles, nIsolatedBlocks = 0, 0
         ## absolute differencial value of MaxY
@@ -155,41 +177,51 @@ class Block_Controller(object):
         BlockMaxY = [0] * width
         holeCandidates = [0] * width
         holeConfirm = [0] * width
+        ## number of horizontal changes
+        horizontalChange = [0] * height
 
         ### check board
         # each y line
-        for y in range(height - 1, 0, -1):
+        for y in range(height - 1, 0, -1): # range(start, stop, step) from top line to bottom line.
             hasHole = False
             hasBlock = False
             # each x line
             for x in range(width):
-                ## check if hole or block..
-                if board[y * self.board_data_width + x] == self.ShapeNone_index:
+                ## check if hole or block.
+                if board[y * self.board_data_width + x] == self.ShapeNone_index: # ShapeNone=0, so serach points printing "0".
                     # hole
                     hasHole = True
                     holeCandidates[x] += 1  # just candidates in each column..
                 else:
                     # block
                     hasBlock = True
-                    BlockMaxY[x] = height - y                # update blockMaxY
-                    if holeCandidates[x] > 0:
-                        holeConfirm[x] += holeCandidates[x]  # update number of holes in target column..
-                        holeCandidates[x] = 0                # reset
-                    if holeConfirm[x] > 0:
-                        nIsolatedBlocks += 1                 # update number of isolated blocks
+                # count number of change horizontal
+#                if x > 0:
+#                    if board[y * width + x] == self.ShapeNone_index:
+#                        if board[y * width + x - 1] != self.ShapeNone_index:
+#                            horizontalChange[y] += 1
+#                    elif board[y * width + x - 1] == self.ShapeNone_index:
+#                        horizontalChange[y] += 1
 
-            if hasBlock == True and hasHole == False:
+            if hasBlock == True and hasHole == False: # at least one hole exists, hasHole will be true.
                 # filled with block
                 fullLines += 1
-            elif hasBlock == True and hasHole == True:
-                # do nothing
-                pass
+            elif hasBlock == True and hasHole == True: # the line to be checked, for there are both blocks and holes.
+                for x in range(width):
+                    if board[y * self.board_data_width + x] != self.ShapeNone_index: # ShapeNone=0, so serach points printing "0".
+                        BlockMaxY[x] = height - y                # update blockMaxY
+                        if holeCandidates[x] > 0:
+                            holeConfirm[x] += holeCandidates[x]  # update number of holes in target column
+                            holeCandidates[x] = 0                # reset.
+                        if holeConfirm[x] > 0:
+                            nIsolatedBlocks += 1                 # update number of isolated blocks.if hole exits,isolatedBlock also exists.
+    
             elif hasBlock == False:
                 # no block line (and ofcourse no hole)
                 pass
 
         # nHoles
-        for x in holeConfirm:
+        for x in holeConfirm: # holeConfirm is an array whose element is a number of holes at Coord x.
             nHoles += abs(x)
 
         ### absolute differencial value of MaxY
@@ -200,10 +232,15 @@ class Block_Controller(object):
         for x in BlockMaxDy:
             absDy += abs(x)
 
+        # number of horizontal changes
+        numHorizontalChange = 0
+        for y in horizontalChange:
+            numHorizontalChange += y
+
         #### maxDy
         #maxDy = max(BlockMaxY) - min(BlockMaxY)
         #### maxHeight
-        #maxHeight = max(BlockMaxY) - fullLines
+        maxHeight = max(BlockMaxY) - fullLines
 
         ## statistical data
         #### stdY
@@ -220,12 +257,27 @@ class Block_Controller(object):
 
         # calc Evaluation Value
         score = 0
-        score = score + fullLines * 10.0           # try to delete line 
-        score = score - nHoles * 1.0               # try not to make hole
+        if fullLines == 4:
+            score = score + fullLines * 100
+        elif fullLines > 0:
+            if maxHeight > 16:
+                score = score + fullLines * 10    
+            else:
+                score = score - 6/fullLines
+        if offsetFL == -4:
+            score = score - offsetFL * 100
+        elif fullLines < 4 & offsetFL < 0:
+            if maxHeight > 16:
+                score = score - fullLines * 10
+            else:
+                score = score + 6/offsetFL
+        score = score - nHoles * 10.0               # try not to make hole
         score = score - nIsolatedBlocks * 1.0      # try not to make isolated block
-        score = score - absDy * 1.0                # try to put block smoothly
+        score = score - absDy * 1.0                 # try to put block smoothly
+        #score = score - numHorizontalChange * 1.0
         #score = score - maxDy * 0.3                # maxDy
-        #score = score - maxHeight * 5              # maxHeight
+        if maxHeight > 16:
+            score = score - maxHeight * 5              # maxHeight
         #score = score - stdY * 1.0                 # statistical data
         #score = score - stdDY * 0.01               # statistical data
 
