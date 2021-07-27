@@ -56,7 +56,6 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
                 # get board data, as if dropdown block
                 board = self.getBoard(self.board_backboard, self.CurrentShape_class, direction0, x0)
                 offsetFL = -self.getFullLines(board)
-                print(offsetFL)
 
                 for direction1 in NextShapeDirectionRange:
                     x1Min, x1Max = self.getSearchXRange(self.NextShape_class, direction1)
@@ -261,11 +260,17 @@ class Block_Controller(object): # object is not necessary (to use python2): Bloc
         if fullLines == 4:
             score = score + fullLines * 100
         elif fullLines > 0:
-            score = score - 6/fullLines
+            if maxHeight > 16:
+                score = score + fullLines * 10    
+            else:
+                score = score - 6/fullLines
         if offsetFL == -4:
             score = score - offsetFL * 100
-        elif offsetFL < 0:
-            score = score + 6/offsetFL
+        elif fullLines < 4 & offsetFL < 0:
+            if maxHeight > 16:
+                score = score - fullLines * 10
+            else:
+                score = score + 6/offsetFL
         score = score - nHoles * 10.0               # try not to make hole
         score = score - nIsolatedBlocks * 1.0      # try not to make isolated block
         score = score - absDy * 1.0                 # try to put block smoothly
