@@ -280,7 +280,10 @@ class Block_Controller(object):  # object is not necessary (to use python2)
         for x in range(width):
             if wellDepth[x] > 2:
                 wellNum += 1
-                wellPenalty += wellDepth[x] if wellNum > 1 else 0
+                wellPenalty += wellDepth[x]
+        if wellNum < 2:
+            wellPenalty = 0
+
         # statistical data
         # stdY
         # if len(BlockMaxY) <= 0:
